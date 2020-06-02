@@ -154,7 +154,9 @@ class Lexer():
         end = self._index+1
 
     end = end + (1 if confined else 0)
-    return None if skip else (Token(self._text[start:end], token_type,
+    token = self._text[start] if start == end else self._text[start:end]
+
+    return None if skip else (Token(token, token_type,
                                     start, self._index, self._row, self._col))
 
   @property
@@ -180,7 +182,7 @@ class Lexer():
     # print(repr(self._ch), repr(token), regexes.regular_string.match(token) is not None)
     return regexes.regular_string.match(token) is not None
 
-  def sep_stopper(self, a, b):
+  def sep_stopper(self, start, end):
     if regexes.separator.match(self._ch) is not None:
       return True
 
