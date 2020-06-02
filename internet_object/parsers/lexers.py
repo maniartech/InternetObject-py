@@ -150,11 +150,11 @@ class Lexer():
         stopped = True
         break
 
-      if self._ch_code > 32:
-        end = self._index+1
+      # if self._ch_code > 32:
+      #   end = self._index+1
 
-    end = end + (1 if confined else 0)
-    token = self._text[start] if start == end else self._text[start:end]
+    # end = end + (1 if confined else 0)
+    token = self._text[start:self._index + (1 if confined else 0)].strip()
 
     return None if skip else (Token(token, token_type,
                                     start, self._index, self._row, self._col))
@@ -178,7 +178,7 @@ class Lexer():
                           (self._row, self._col,))
 
       return False
-    token = self._text[start:end+1]
+    token = self._text[start:self._index+1]
     # print(repr(self._ch), repr(token), regexes.regular_string.match(token) is not None)
     return regexes.regular_string.match(token) is not None
 
