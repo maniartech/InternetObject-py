@@ -59,17 +59,17 @@ class Lexer():
     # Scanner and Processor
     if ch_code <= 32:
       self.scan('ws',
-                lambda a, b: self._ch_code > 32,
+                lambda a, b: self._ch_code <= 32,
                 True)
 
     # Scan regular string
     elif ch == '"':
-      token = self.scan("str", self.string_stopper, confined=True)
+      token = self.scan("str", self.string_scanner, confined=True)
       self.advance()
 
     # Scan raw string
     # elif ch == "'":
-    #   token = self.scan("str", self.string_stopper, confined=True)
+    #   token = self.scan("str", self.string_scanner, confined=True)
     #   self.advance()
 
     elif is_datasep:
@@ -88,7 +88,7 @@ class Lexer():
 
     else:
       # Scan everything else
-      token = self.scan("str", self.sep_stopper)
+      token = self.scan("str", self.sep_scanner)
 
     return token
 
@@ -134,7 +134,7 @@ class Lexer():
     except IndexError as aer:
       return None
 
-  def scan(self, token_type, stopper, confined=False, skip=False):
+  def scan(self, token_type, scanner, confined=False, skip=False):
 
     start = self._index
     end = start
@@ -146,7 +146,7 @@ class Lexer():
       # Reached the end of the text, break it
       if self._done is True:
         break
-      if stopper(start, self._index) is True:
+      if scanner(start, self._index) is False:
         stopped = True
         break
 
@@ -171,22 +171,22 @@ class Lexer():
     except IndexError:
       return False
 
-  def string_stopper(self, start, end, scan_finished=False):
+  def string_scanner(self, start, end, scan_finished=False):
     if self._ch != '"':
       if self._index == self._len - 1:
         raise SyntaxError("incomplete-string (%s, %s)" %
                           (self._row, self._col,))
 
-      return False
+      return True
     token = self._text[start:self._index+1]
     # print(repr(self._ch), repr(token), regexes.regular_string.match(token) is not None)
-    return regexes.regular_string.match(token) is not None
+    return regexes.regular_string.match(token) is None
 
-  def sep_stopper(self, start, end):
+  def sep_scanner(self, start, end):
     if regexes.separator.match(self._ch) is not None:
-      return True
+      return False
 
     if self._ch == "-":
       return self.is_datasep
 
-    return False
+    return True
