@@ -72,6 +72,9 @@ class Lexer():
     #   token = self.scan("str", self.string_scanner, confined=True)
     #   self.advance()
 
+    elif ch == '#':
+      token = self.scan('comment', self.comment_scanner)
+
     elif is_datasep:
       token = Token("---", "datasep", self._index,
                     self._index + 3, self._row, self._col)
@@ -176,17 +179,22 @@ class Lexer():
       if self._index == self._len - 1:
         raise SyntaxError("incomplete-string (%s, %s)" %
                           (self._row, self._col,))
-
       return True
+
     token = self._text[start:self._index+1]
-    # print(repr(self._ch), repr(token), regexes.regular_string.match(token) is not None)
     return regexes.regular_string.match(token) is None
 
   def sep_scanner(self, start, end):
     if regexes.separator.match(self._ch) is not None:
       return False
 
+    elif self._ch == '#':
+      return False
+
     if self._ch == "-":
-      return self.is_datasep
+      return not self.is_datasep
 
     return True
+
+  def comment_scanner(self, start, end):
+    return self._ch != '\n'
