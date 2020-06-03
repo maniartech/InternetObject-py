@@ -83,7 +83,7 @@ class Lexer():
       self.advance()
 
     # Process separator
-    elif re.match(regexes.separator, ch):
+    elif regexes.separator.match(ch):
       # self._index += 1
       token = Token(ch, 'sep', self._index,
                     self._index, self._row, self._col)
@@ -119,49 +119,24 @@ class Lexer():
       self._index = len(self._text) - 1
       return False
 
-  def get_char(self, index):
-    try:
-      ch = self._text[index]
-      ch_code = ord(ch)
-
-      return ch, ch_code
-
-    except IndexError as aer:
-      return None, -1
-
-  def get_phrase(self, start, end):
-    try:
-      phrase = self._text[start:end]
-      return phrase
-
-    except IndexError as aer:
-      return None
-
   def scan(self, token_type, scanner, confined=False, skip=False):
 
     start = self._index
-    end = start
-
-    stopped = False
 
     while self.advance():
 
       # Reached the end of the text, break it
       if self._done is True:
         break
+
       if scanner(start, self._index) is False:
-        stopped = True
         break
 
-      # if self._ch_code > 32:
-      #   end = self._index+1
-
-    # end = end + (1 if confined else 0)
     token = self._text[start:self._index + (1 if confined else 0)].strip()
-
     return None if skip else (Token(token, token_type,
-                                    start, self._index, self._row, self._col))
+                                    start, start + len(token)-1, self._row, self._col))
 
+  # Validators, Scanners and Processors
   @property
   def is_datasep(self):
     start = self._index
@@ -174,7 +149,7 @@ class Lexer():
     except IndexError:
       return False
 
-  def string_scanner(self, start, end, scan_finished=False):
+  def string_scanner(self, start, end):
     if self._ch != '"':
       if self._index == self._len - 1:
         raise SyntaxError("incomplete-string (%s, %s)" %
