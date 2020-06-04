@@ -1,6 +1,6 @@
 import re
-import regexes
 
+from regexes import *
 from tokens import Token
 
 
@@ -18,6 +18,10 @@ class Lexer():
     self._tokens = []
     self.advance()
     self._len = len(text)
+
+  @property
+  def done(self):
+    return self._done
 
   def read_all(self):
     token = self.read()
@@ -46,7 +50,7 @@ class Lexer():
     ch = self._ch
     ch_code = self._ch_code
 
-    print("+++", repr(ch), self._index)
+    # print("+++", repr(ch), self._index)
     should_advance = False
     token = None
 
@@ -83,7 +87,7 @@ class Lexer():
       self.advance()
 
     # Process separator
-    elif regexes.separator.match(ch):
+    elif re_separator.match(ch):
       # self._index += 1
       token = Token(ch, 'sep', self._index,
                     self._index, self._row, self._col)
@@ -92,6 +96,9 @@ class Lexer():
     else:
       # Scan everything else
       token = self.scan("str", self.sep_scanner)
+      value, token_type = self.process_open_values(token.token)
+      token.value = value
+      token.type = token_type
 
     return token
 
@@ -157,10 +164,10 @@ class Lexer():
       return True
 
     token = self._text[start:self._index+1]
-    return regexes.regular_string.match(token) is None
+    return re_regular_string.match(token) is None
 
   def sep_scanner(self, start, end):
-    if regexes.separator.match(self._ch) is not None:
+    if re_separator.match(self._ch) is not None:
       return False
 
     elif self._ch == '#':
@@ -173,3 +180,23 @@ class Lexer():
 
   def comment_scanner(self, start, end):
     return self._ch != '\n'
+
+  def process_open_values(self, token):
+
+    if token == 'T' or token == 'true':
+      return True, 'bool'
+
+    elif token == 'F' or token == 'false':
+      return False, 'bool'
+
+    elif token == 'N' or token == 'null':
+      return None, 'null'
+
+    elif token.isnumeric() or (
+        (token.startswith('-') or token.startswith('+'))
+            and token[1:].isnumeric()):
+      return (
+          float(token) if token.find('.') > -1 else int(token)
+      ), 'number'
+
+    return token, 'str'

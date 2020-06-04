@@ -1,12 +1,12 @@
 import re
 
 
-white_space = re.compile(r'[\s]')
+re_white_space = re.compile(r'[\s]')
 
-separator = re.compile(r'[\{\}\[\]\:\,~]')
+re_separator = re.compile(r'[\{\}\[\]\:\,~]')
 
-not_separator = re.compile(r'[^\{\}\[\]\:\,~]')
+re_not_separator = re.compile(r'[^\{\}\[\]\:\,~]')
 
-not_regular_string = re.compile(r'[^\"]')
+re_not_regular_string = re.compile(r'[^\"]')
 
-regular_string = re.compile(r"^\"(?:[^\"\\]|\\.)*\"$")
+re_regular_string = re.compile(r"^\"(?:[^\"\\]|\\.)*\"$")
