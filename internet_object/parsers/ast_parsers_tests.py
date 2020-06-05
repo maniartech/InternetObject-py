@@ -7,7 +7,7 @@ class ASTTest(unittest.TestCase):
   def test(self):
 
     ast = AST(r"""
-    a, b, c
+    a:1, b:T, c:[a]
     """)
 
     ast.parse()
