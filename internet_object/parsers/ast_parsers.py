@@ -83,13 +83,13 @@ class AST:
     if is_comma:
       # When comma is received while pipe is empty
       # push undefined token
-      if pipe_len == 0:
+      if pipe_len == 0 or pipe[-1] == ",":
         undefined_node = self.get_undefined_node()
         values.append(undefined_node)
+        pipe.append(",")
 
-      # When value exists in the pipe clear it
-      elif pipe_len == 1 or pipe_len == 3:
-        pipe.clear()
+      else:
+        pipe.append(",")
 
     elif is_collon:
       # Throw a syntax error
@@ -99,26 +99,29 @@ class AST:
           pipe[-1] == ":" or
               # When last value in the pipe is not a string
               pipe[-1].type != "str"):
-        # print(pipe)
+        print(pipe)
         raise SyntaxError("unexpected-colon")
 
-      elif pipe_len == 1:
+      else:
         # Just add the colon
         pipe.append(":")
 
     else:
-      if pipe_len == 0:
-        pipe.append(value)
-        values.append(value)
-
       # When the last char in pipe is : setup key-value
-      if pipe_len == 2 and pipe[-1] == ":":
-        # print("----")
-        # print(values)
-        # print(last_value)
+      if pipe_len > 0 and pipe[-1] == ":":
         last_value.key = last_value.value
         last_value.value = value
         pipe.append(value)
+
+      else:  # if pipe_len == 0 or pipe[-1] == ",":
+        pipe.append(value)
+        values.append(value)
+
+      # else:
+      #   print("====")
+      #   print("---", pipe)
+      #   print("---", value)
+      #   raise SyntaxError("expecting a separator")
 
   def pop_container(self, container_type):
     container = self.stack[0]
