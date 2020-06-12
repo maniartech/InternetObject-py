@@ -16,8 +16,8 @@ class Lexer():
     self._col = 0
     self._row = 0
     self._tokens = []
-    self.advance()
     self._len = len(text)
+    self.advance()
 
   @property
   def done(self):
@@ -82,9 +82,7 @@ class Lexer():
     elif is_datasep:
       token = Token("---", "datasep", self._index,
                     self._index + 3, self._row, self._col)
-      self.advance()
-      self.advance()
-      self.advance()
+      self.advance(3)
 
     # Process separator
     elif re_separator.match(ch):
@@ -97,7 +95,7 @@ class Lexer():
       # Scan everything else
       token = self.scan("str", self.sep_scanner)
       value, token_type = self.process_open_values(token.token)
-      token.value = value
+      token.val = value
       token.type = token_type
 
     return token
@@ -105,7 +103,8 @@ class Lexer():
   def ws_scanner(self, start, end):
     return self._ch_code <= 32
 
-  def advance(self):
+  def advance(self, times=1):
+    advanced = 1
     try:
       self._index += 1
       self._ch = self._text[self._index]
@@ -117,7 +116,12 @@ class Lexer():
         self._col = 1
         self._row += 1
 
-      return True
+      result = True
+      while advanced < times:
+        result = self.advance()
+        advanced += 1
+
+      return result
 
     except IndexError:  # End of the text
       self._ch = None
@@ -192,11 +196,12 @@ class Lexer():
     elif token == 'N' or token == 'null':
       return None, 'null'
 
-    elif token.isnumeric() or (
-        (token.startswith('-') or token.startswith('+'))
-            and token[1:].isnumeric()):
-      return (
-          float(token) if token.find('.') > -1 else int(token)
-      ), 'number'
+    elif re_number.match(token) is not None:
+      try:
+        return (
+            int(token) if re.search(r"[\.eE]", token) is None else float(token)
+        ), 'number'
+      except ValueError:
+        pass
 
     return token, 'str'
