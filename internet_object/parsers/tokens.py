@@ -1,12 +1,11 @@
 
 
-class Token:
+class Token (dict):
   """
   Represents the Internet Object token
   """
 
   def __init__(self, token, token_type, start, end, row, col):
-
     self.start = start
     """int: The token start"""
 
@@ -16,6 +15,10 @@ class Token:
     self.type = token_type
     self.token = token  # text[start:end+1]
     self.val = token
+
+  def __setattr__(self, name, value):
+    dict.__setitem__(self, name, value)
+    return super().__setattr__(name, value)
 
   def __str__(self):
     return "%s (%s, %s, %s, %s, %s)" % (
