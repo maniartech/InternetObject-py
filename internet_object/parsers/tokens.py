@@ -15,11 +15,11 @@ class Token:
     self.col = col
     self.type = token_type
     self.token = token  # text[start:end+1]
-    self.value = token
+    self.val = token
 
   def __str__(self):
     return "%s (%s, %s, %s, %s, %s)" % (
-        repr(self.value),
+        repr(self.val),
         self.type,
         self.start, self.end, self.row, self.col
     )
@@ -35,5 +35,5 @@ class Token:
         # "col": self.col,
         "type": self.type,
         # "token": self.token,
-        "value": self.value
+        "val": self.val
     }
