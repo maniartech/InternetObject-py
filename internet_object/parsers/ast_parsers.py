@@ -1,6 +1,7 @@
 from tokens import Token
 from lexers import Lexer
 from nodes import Node
+from helpers import *
 
 
 class AST:
@@ -13,7 +14,7 @@ class AST:
     self.index = 0
 
     self.stack = []
-    self.value_pipe = []
+    self.val_pipe = []
 
     self.tree = {
         "data": None
@@ -28,51 +29,63 @@ class AST:
       if lexer.done:
         break
 
-      token = lexer.read()
-      if token is None:
+      self.token = lexer.read()
+      if self.token is None:
         continue
 
-      self.process(token)
+      self.process()
 
-    print("+++", self.tree["data"])
+    if len(self.stack) == 2 and self.stack[-1].type == "collection":
+      self.pop_container("collection")
+
+    self.pop_container("object")
+
+    # Stack must be empty
+    self.check_complete()
+    print(self.tree["data"])
 
   def get_object(self):
     pass
 
-  def process(self, token):
+  def process(self):
+    token = self.token
     if token.type == "sep":
-      if token.value == "{":
+      if token.val == "{":
         self.push_container("object", token)
 
-      elif token.value == "}":
+      elif token.val == "}":
         self.pop_container("object")
 
-      elif token.value == "[":
+      elif token.val == "[":
         self.push_container("array", token)
 
-      elif token.value == "]":
+      elif token.val == "]":
+        # print_ast_stack(self.stack)
         self.pop_container("array")
 
-      elif token.value == "~":
+      elif token.val == "~":
         self.push_container("collection", token)
 
       else:
         self.push_value(Node.from_token(token))
 
     elif token.type == "datasep":
-      raise NotImplementedError("not-ready")
+      self.process_datasep()
 
     else:
       self.push_value(Node.from_token(token))
 
-  def push_value(self, value):
-    is_comma = value.type == "sep" and value.value == ","
-    is_collon = value.type == "sep" and value.value == ":"
-    pipe = self.value_pipe
+  def process_datasep(self):
+    pass
+
+  def push_value(self, val):
+    is_comma = val.type == "sep" and val.val == ","
+    is_collon = val.type == "sep" and val.val == ":"
+    pipe = self.val_pipe
     pipe_len = len(pipe)
 
     container = self.get_or_create_last_container()
-    values = container.value
+    values = container.val
     values_len = len(values)
 
     try:
@@ -84,8 +97,8 @@ class AST:
       # When comma is received while pipe is empty
       # push undefined token
       if pipe_len == 0 or pipe[-1] == ",":
-        undefined_node = self.get_undefined_node()
-        values.append(undefined_node)
+        # undefined_node = self.get_undefined_node()
+        values.append(None)
         pipe.append(",")
 
       else:
@@ -109,23 +122,25 @@ class AST:
     else:
       # When the last char in pipe is : setup key-value
       if pipe_len > 0 and pipe[-1] == ":":
-        last_value.key = last_value.value
-        last_value.value = value
-        pipe.append(value)
+        last_value.key = last_value.val
+        last_value.type = val.type
+        last_value.val = val
+        pipe.append(val)
 
       else:  # if pipe_len == 0 or pipe[-1] == ",":
-        pipe.append(value)
-        values.append(value)
+        val.pos = values_len
+        pipe.append(val)
+        values.append(val)
 
-      # else:
-      #   print("====")
-      #   print("---", pipe)
-      #   print("---", value)
-      #   raise SyntaxError("expecting a separator")
+  def check_complete(self):
+    if len(self.stack) != 0:
+      raise SyntaxError("incomplete-%s" % self.stack[0].type)
 
   def pop_container(self, container_type):
-    container = self.stack[0]
-    self.stack = self.stack[1:]
+    container = self.stack[-1]
+    if container.type != container_type:
+      raise SyntaxError("incomplete-%s" % container.type)
+    self.stack = self.stack[:-1]
 
   def push_container(self, object_type, token):
     parent = self.get_last_container()
@@ -137,12 +152,12 @@ class AST:
     self.stack.append(node)
 
   def get_undefined_node(self, parent=None):
-    index = 0 if parent is None else len(parent.value)
+    index = 0 if parent is None else len(parent.val)
     return Node(None, "undefined", 0, 0, 1, 1, 0, parent)
 
   def get_value_node(self, token, parent=None):
-    index = 0 if parent is None else len(parent.value)
-    return Node(token.value, token.type, token.start,
+    index = 0 if parent is None else len(parent.val)
+    return Node(token.val, token.type, token.start,
                 token.end, token.raw, token.col, index, parent)
 
   def get_last_container(self):
