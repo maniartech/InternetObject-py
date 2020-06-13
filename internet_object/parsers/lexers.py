@@ -68,12 +68,12 @@ class Lexer():
 
     # Scan regular string
     elif ch == '"':
-      token = self.scan("str", self.string_scanner, confined=True)
+      token = self.scan("string", self.string_scanner, confined=True)
       self.advance()
 
     # Scan raw string
     # elif ch == "'":
-    #   token = self.scan("str", self.string_scanner, confined=True)
+    #   token = self.scan("string", self.string_scanner, confined=True)
     #   self.advance()
 
     elif ch == '#':
@@ -93,7 +93,7 @@ class Lexer():
 
     else:
       # Scan everything else
-      token = self.scan("str", self.sep_scanner)
+      token = self.scan("string", self.sep_scanner)
       value, token_type = self.process_open_values(token.token)
       token.val = value
       token.type = token_type
@@ -204,4 +204,4 @@ class Lexer():
       except ValueError:
         pass
 
-    return token, 'str'
+    return token, "string"
