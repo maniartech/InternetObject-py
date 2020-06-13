@@ -22,7 +22,6 @@ class AST:
 
   def parse(self):
     lexer = self.lexer
-    self.tree["data"] = self.get_or_create_last_container()
 
     while True:
 
@@ -35,17 +34,8 @@ class AST:
 
       self.process()
 
-    if len(self.stack) == 2 and self.stack[-1].type == "collection":
-      self.pop_container("collection")
-
-    self.pop_container("object")
-
-    # Stack must be empty
-    self.check_complete()
-    print(self.tree["data"])
-
-  def get_object(self):
-    pass
+    self.finalize()
+    print_json(self.tree)
 
   def process(self):
     token = self.token
@@ -64,7 +54,7 @@ class AST:
         self.pop_container("array")
 
       elif token.val == "~":
-        self.push_container("collection", token)
+        self.process_collection()
 
       else:
         self.push_value(Node.from_token(token))
@@ -75,8 +65,25 @@ class AST:
     else:
       self.push_value(Node.from_token(token))
 
+  def process_collection(self):
+    data = self.tree['data']
+    if data is None or isinstance(data, list):
+      self.finalize()
+      if data is None:
+        self.tree["data"] = []
+    else:
+      raise SystemError("not-a-collection")
+
   def process_datasep(self):
-    pass
+
+    self.finalize()
+    header = self.tree.get("header", None)
+
+    if header is not None:
+      raise SyntaxError("multiple-datasep")
+
+    self.tree["header"] = self.tree["data"]
+    self.tree["data"] = None
 
   def push_value(self, val):
     is_comma = val.type == "sep" and val.val == ","
@@ -132,7 +139,14 @@ class AST:
         pipe.append(val)
         values.append(val)
 
-  def check_complete(self):
+  def finalize(self):
+    if len(self.stack) == 2 and self.stack[-1].type == "collection":
+      self.pop_container("collection")
+
+    # remove the root container object if found
+    if len(self.stack) == 1:
+      self.pop_container("object")
+
     if len(self.stack) != 0:
       raise SyntaxError("incomplete-%s" % self.stack[0].type)
 
@@ -144,6 +158,13 @@ class AST:
 
   def push_container(self, object_type, token):
     parent = self.get_last_container()
+
+    if object_type == "collection":
+      if parent is not None:
+        raise SyntaxError("invalid-collection-postion")
+
+      self.finalize()
+
     pos = parent.pos + 1 if parent is not None else 0
     node = Node([], object_type, token.start,
                 token.end, token.row, token.col, pos, parent)
@@ -171,5 +192,9 @@ class AST:
     if node is None:
       node = Node([], "object", 0, 0, 1, 1, 0, None)
       self.stack.append(node)
+      if isinstance(self.tree['data'], list):
+        self.tree['data'].append(node)
+      else:
+        self.tree["data"] = node
 
     return node
