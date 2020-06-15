@@ -11,4 +11,6 @@ re_not_regular_string = re.compile(r'[^\"]')
 
 re_regular_string = re.compile(r"^\"(?:[^\"\\]|\\.)*\"$")
 
+re_raw_string = re.compile(r"^'((?:''|[^'])*)'$")
+
 re_number = re.compile(r"^([-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)$")
