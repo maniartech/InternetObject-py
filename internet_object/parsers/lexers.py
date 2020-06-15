@@ -72,9 +72,9 @@ class Lexer():
       self.advance()
 
     # Scan raw string
-    # elif ch == "'":
-    #   token = self.scan("string", self.string_scanner, confined=True)
-    #   self.advance()
+    elif ch == "'":
+      token = self.scan("string", self.raw_string_scanner, confined=True)
+      self.advance()
 
     elif ch == '#':
       token = self.scan('comment', self.comment_scanner)
@@ -106,10 +106,10 @@ class Lexer():
   def advance(self, times=1):
     advanced = 1
     try:
-      self._index += 1
-      self._ch = self._text[self._index]
+      self._ch = self._text[self._index+1]
       self._ch_code = ord(self._ch)
 
+      self._index += 1
       self._col += 1
 
       if self._ch == '\n':
@@ -169,6 +169,24 @@ class Lexer():
 
     token = self._text[start:self._index+1]
     return re_regular_string.match(token) is None
+
+  def raw_string_scanner(self, start, end):
+    if self._ch != "'":
+      if self._index == self._len - 1:
+        raise SyntaxError("incomplete-string (%s, %s)" %
+                          (self._row, self._col,))
+      return True
+
+    # If next ch is ' too, ignore it
+    try:
+      next_ch = self._text[self._index+1]
+      if next_ch == "'":
+        return True
+    except IndexError:
+      return False
+
+    token = self._text[start:self._index+1]
+    return re_raw_string.match(token) is None
 
   def sep_scanner(self, start, end):
     if re_separator.match(self._ch) is not None:
