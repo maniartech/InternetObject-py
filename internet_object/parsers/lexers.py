@@ -1,7 +1,7 @@
 import re
 
-from regexes import *
-from tokens import Token
+from .regexes import *
+from .tokens import Token
 
 
 class Lexer():
@@ -143,7 +143,8 @@ class Lexer():
       if scanner(start, self._index) is False:
         break
 
-    token = self._text[start:self._index + (1 if confined else 0)].strip()
+    token = self._text[start:self._index +
+                       (1 if confined or self._done else 0)].strip()
     return None if skip else (Token(token, token_type,
                                     start, start + len(token)-1, self._row, self._col))
 

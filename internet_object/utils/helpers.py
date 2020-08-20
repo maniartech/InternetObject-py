@@ -7,5 +7,5 @@ def print_ast_stack(stack):
     print(item)
 
 
-def print_json(value):
+def pretty_print(value):
   print(json.dumps(value, indent=2))

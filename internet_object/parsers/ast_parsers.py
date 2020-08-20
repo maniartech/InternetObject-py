@@ -1,12 +1,13 @@
-from tokens import Token
-from lexers import Lexer
-from nodes import Node
-from helpers import *
+from utils import helpers
+
+from .tokens import Token
+from .lexers import Lexer
+from .nodes import Node
 
 
 class AST:
 
-  def __init__(self, text):
+  def __init__(self, text, only_def=False):
     self.text = text
     self.lexer = Lexer(text)
     self.last_token = None
@@ -15,8 +16,10 @@ class AST:
 
     self.stack = []
     self.val_pipe = []
+    self.only_def = only_def
 
     self.tree = {
+        "header": None,
         "data": None
     }
 
@@ -28,14 +31,29 @@ class AST:
       if lexer.done:
         break
 
+
       self.token = lexer.read()
+
       if self.token is None:
         continue
 
       self.process()
 
     self.finalize()
-    print_json(self.tree)
+
+    if self.only_def:
+      self.tree['header'] = self.tree['data']
+      self.tree['data'] = None
+
+    helpers.pretty_print(self.tree)
+
+  @property
+  def header(self):
+    return self.tree["header"]
+
+  @property
+  def data(self):
+    return self.tree["data"]
 
   def process(self):
     token = self.token
@@ -79,8 +97,11 @@ class AST:
     self.finalize()
     header = self.tree.get("header", None)
 
+    if self.only_def:
+      raise SyntaxError("invalid-datasep-found")
+
     if header is not None:
-      raise SyntaxError("multiple-datasep")
+      raise SyntaxError("invalid-datasep-found")
 
     self.tree["header"] = self.tree["data"]
     self.tree["data"] = None
@@ -118,7 +139,7 @@ class AST:
           # When last value in the pipe is colon
           pipe[-1] == ":" or
               # When last value in the pipe is not a string
-              pipe[-1].type != "str"):
+              pipe[-1].type != "string"):
         print(pipe)
         raise SyntaxError("unexpected-colon")
 
@@ -129,9 +150,13 @@ class AST:
     else:
       # When the last char in pipe is : setup key-value
       if pipe_len > 0 and pipe[-1] == ":":
-        last_value.key = last_value.val
-        last_value.type = val.type
-        last_value.val = val
+        # print(">>>", last_value)
+        values[-1] = val
+        values[-1].key = last_value.val
+
+        # last_value.key = last_value.val
+        # last_value.type = val.type
+        # last_value.val = val
         pipe.append(val)
 
       else:  # if pipe_len == 0 or pipe[-1] == ",":

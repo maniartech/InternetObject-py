@@ -13,6 +13,7 @@ class Node(dict):
     self.key = None
     self.val = val
 
+
   def __setattr__(self, name, value):
     dict.__setitem__(self, name, value)
     return super().__setattr__(name, value)
