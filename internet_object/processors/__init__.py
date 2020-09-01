@@ -1,4 +1,4 @@
-from .ast_parsers import *
+from .data import *
 
 # For relative imports to work in Python 3.6
 # import os

@@ -1,5 +1,5 @@
 import unittest
-from parsers.ast_parsers import AST
+from .ast_parsers import AST
 
 
 class ASTTest(unittest.TestCase):

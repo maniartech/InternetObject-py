@@ -1,65 +1,106 @@
 from utils import helpers
 from utils import is_datatype, is_scalar, is_container
 from .memberdef import MemberDef, SchemaDef
-
+from processors import DataProcessor
+from processors.objects import IOObject
 
 
 # Return the python dictionary
-def compile_schema (tree, vars=None):
+def compile(tree, vars=None):
 
   if tree is None:
     return None
 
-  if is_scalar(tree.type):
-    return tree.val
+  if tree.type == "object":
+    processor = DataProcessor(tree, True)
+    obj = processor.parse()
+    helpers.pretty_print(obj)
+    return compile_schema(obj, "", vars)
 
-  is_array = tree.type == "array"
-  is_obj = tree.type == "object"
-
-  if is_container(tree.type):
-    # helpers.pretty_print(tree)
-
-    container = {} if is_obj else []
-
-    members = []
-
-    # helpers.pretty_print(tree)
-    for index, member in enumerate(tree.val):
-      val = None
-
-      if is_scalar(member.type):
-        val = member.val
-
-      if is_container(member.type):
-        val = compile_schema(member,
-                    {} if member.type == "object" else [])
-
-      if is_array:
-        if member.key is not None:
-          val = {member.key: val}
-
-        container.append(val)
-
-      elif is_obj:
-        key = member.key if member.key is not None else str(index)
-        container[key] = val
-
-      members.append({
-          "key": key if member.key else index,
-          "val": val
-        })
+  else:
+    raise "Invalid object"
 
 
-    helpers.pretty_print(members)
-    helpers.pretty_print(container)
+def compile_schema(obj, path="", vars=None):
 
-    return container
+  # print("+++", obj)
 
+  # if is_memberdef(obj):
+  #   return compile_memberdef(obj, vars)
+
+  schema = IOObject()
+
+  # helpers.pretty_print(tree)
+  for item in obj.fields():
+
+    if item.key == str(item.index):
+      # if isinstance(item.val, IOObject)
+      name = item.val
+      val = "any"
+    else:
+      name = item.key
+      val = item.val
+      # print("***", name, val)
+
+    # name = item.val if item.key == str(item.index) else item.key
+    # val = "any" if item.key == str(item.index) else item.val
+
+    if isinstance(val, str):
+      if is_datatype(val):
+        schema.append(get_memberdef(name, val, path), name)
+      else:
+        raise "invalid-datatype"
+
+    if isinstance(val, IOObject):
+      if is_memberdef(val):
+        schema.append(get_object_memberdef(val), name)
+      else:
+        # print(">>>", name, compile_schema(val, name, vars))
+        schema.append(
+          get_memberdef(name, "object", path, schema=compile_schema(val, name, vars)),name)
+
+  helpers.pretty_print(schema)
+
+  return schema
+
+
+def compile_memberdef(obj, var=None):
+  if obj.type != "object":
+    raise "invalid-operation"
+
+
+def get_memberdef(name, type_, path, **kwargs):
+  memberDef = IOObject({
+      "name": name,
+      "type": type_,
+      "path": name if len(path) == 0 else "%s.%s" % (path, name)
+  })
+  memberDef.update(kwargs)
+  return memberDef
+
+def get_object_memberdef(o):
   return None
 
 
-def compile_schema_bak(tree):
+def is_memberdef(o):
+  if len(o) == 0:
+    return False
 
+  if isinstance(o[0], IOObject):
+    if is_memberdef(o[0]):
+      raise "invalid-object"
+    return True
+
+  return is_datatype(o.get_key(0)) or (o.has_key("type") and is_datatype(o.type))
+
+# def is_keyval()
+
+
+def compile_array(tree, vars=None):
+  pass
+
+
+def compile_schema_bak(tree):
   header = tree.header
 
   if header is None:

@@ -1,6 +1,7 @@
 
 def is_datatype(v):
   return v in [
+      'any',
       'string',
       'number',
       'object',
