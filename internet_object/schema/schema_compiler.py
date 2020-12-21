@@ -1,214 +1,225 @@
-from utils import helpers
-from utils import is_datatype, is_scalar, is_container
-from .memberdef import MemberDef, SchemaDef
-from processors import DataProcessor
-from processors.objects import IOObject
+from .schema_utils                import find_name_val, find_key, join_path
+from .schema_utils                import get_object, is_memberdef
+
+from internet_object.core         import errors, InternetObject
+from internet_object.utils        import helpers, is_datatype
+from internet_object.typedefs     import registry
+from internet_object.core.private import errors
 
 
-# Return the python dictionary
-def compile(tree, vars=None):
+def compile(tree, path='', defs=None):
 
   if tree is None:
     return None
 
-  if tree.type == "object":
-    processor = DataProcessor(tree, True)
-    obj = processor.parse()
-    helpers.pretty_print(obj)
-    return compile_schema(obj, "", vars)
+  # Empty object
+  if len(tree) == 0:
+    return {}
 
-  else:
-    raise "Invalid object"
+  if tree.type != 'object':
+    raise TypeError(errors.OBJECT_REQUIRED)
 
+  schema = InternetObject()
+  for item in tree.val:
+    if item is None:
+      assert('Check out why item is None')
+      # raise ValueError(errors.VALUE_REQUIRED)
 
-def compile_schema(obj, path="", vars=None):
+    # Find key, val
+    name, val = find_name_val(item)
 
-  # print("+++", obj)
+    if isinstance(name, str) is False:
+      raise errors.INVALID_KEY # Key must be string!
 
-  # if is_memberdef(obj):
-  #   return compile_memberdef(obj, vars)
+    # TODO: Parse defs here!
 
-  schema = IOObject()
+    memberdef = None
 
-  # helpers.pretty_print(tree)
-  for item in obj.fields():
+    # Process string keys
+    if is_datatype(val):
+      # name
+      # key: string
+      # key: any
+      memberdef = get_memberdef(name, val, path)
 
-    if item.key == str(item.index):
-      # if isinstance(item.val, IOObject)
-      name = item.val
-      val = "any"
+    elif item.type == 'object':
+      # When item type is an object, it could be a schema
+      # or a memberdef.
+      # key: {string, default=test}
+      # address: {city, state, zip}
+      # color: {{r, g, b}, default={0, 0, 0}, null=True}
+      # test: {}
+      memberdef = get_object_memberdef(name, item, path, defs)
+
+    elif item.type == 'array':
+      # tags: []
+      # tags: {[], min=1}
+      # tags: [string]
+      memberdef = get_array_memberdef(name, item, path, defs)
+
     else:
-      name = item.key
-      val = item.val
-      # print("***", name, val)
+      raise errors.INVALID_DATATYPE
 
-    # name = item.val if item.key == str(item.index) else item.key
-    # val = "any" if item.key == str(item.index) else item.val
+    if memberdef is not None:
+      schema.append(memberdef, memberdef.name)
 
-    if isinstance(val, str):
-      if is_datatype(val):
-        schema.append(get_memberdef(name, val, path), name)
-      else:
-        raise "invalid-datatype"
-
-    if isinstance(val, IOObject):
-      if is_memberdef(val):
-        schema.append(get_object_memberdef(val), name)
-      else:
-        # print(">>>", name, compile_schema(val, name, vars))
-        schema.append(
-          get_memberdef(name, "object", path, schema=compile_schema(val, name, vars)),name)
-
-  helpers.pretty_print(schema)
+    else:
+      raise TypeError(errors.INVALID_DATATYPE)
 
   return schema
 
+def get_memberdef(name, type_, path, defs=None):
+  memberdef = get_object(name, type_, path)
 
-def compile_memberdef(obj, var=None):
-  if obj.type != "object":
-    raise "invalid-operation"
+  if type_ == 'object':
+    memberdef.schema = {}
 
+  if type_ == 'array':
+    memberdef.schema = []
 
-def get_memberdef(name, type_, path, **kwargs):
-  memberDef = IOObject({
-      "name": name,
-      "type": type_,
-      "path": name if len(path) == 0 else "%s.%s" % (path, name)
-  })
-  memberDef.update(kwargs)
-  return memberDef
+  return memberdef
 
-def get_object_memberdef(o):
-  return None
+def get_object_memberdef(name, tree, path, defs=None):
+  # typename = None
+  o = get_object(name, 'object', path)
 
+  # key: {}
+  if len(tree.val) == 0:
+    # Return any object memberdef
+    o.schema = {}
+    return o
 
-def is_memberdef(o):
-  if len(o) == 0:
-    return False
+  is_it_memberdef, datatype = is_memberdef(tree)
+  # helpers.pretty_print (is_it_memberdef, tree, datatype)
 
-  if isinstance(o[0], IOObject):
-    if is_memberdef(o[0]):
-      raise "invalid-object"
-    return True
-
-  return is_datatype(o.get_key(0)) or (o.has_key("type") and is_datatype(o.type))
-
-# def is_keyval()
-
-
-def compile_array(tree, vars=None):
-  pass
-
-
-def compile_schema_bak(tree):
-  header = tree.header
-
-  if header is None:
-    return None
-
-  if header.type == "object":
-    mdef = MemberDef("root", "object", "")
-    mdef.schema = SchemaDef("object")
-    __process_object(header, mdef)
-    return mdef
-
-  return None
-
-
-def __process_object(o, odef):
-
-  schema = odef.schema
-  schema.members
-  mdef = None
-
-  for m in o.val:
-    if __is_memberdef(m):
-      mdef = __get_memberdef(m, odef.path)
-
-    elif __is_object_schema(m):
-      pass
-
-    if mdef is not None:
-      schema.members.append(mdef)
-
-
-def __get_schema(o, schema_type, path):
-
-  schema = SchemaDef(schema_type)
-
-  for m in o.val:
-    mdef = __get_memberdef(m, path)
-
-    if mdef is not None:
-      schema.members.append(mdef)
-
-  return schema
-
-
-def __get_memberdef(v, base_path):
-  mtype = "any"
-  optional = False
-  null = False
-
-  if v.key:
-    name = v.key  # Key name
-
-    if v.type == "string":
-      if is_datatype(v.type):
-        mtype = v.type
+  # key: {string, ...}
+  # key: {{}, ...}
+  if is_it_memberdef:
+    try:
+      if datatype == 'object':
+        memberdef = parse_objectdef(o, tree)
+      elif datatype == 'array':
+        memberdef = parse_arraydef(name, tree, path, defs)
       else:
-        raise ValueError('invalid-type')
+        memberdef = parse_memberdef(o, tree, datatype)
+      return memberdef
+    except errors.ValidationError as ex:
+      # TODO: Improve error
+      raise errors.ValidationError('Error while parsing %s (%s)' % (o.path, ex,))
 
-    if v.type == 'object':
-      if len(v.val) > 0 and is_datatype(v.val[0]):
-        mtype = v.type
-        index = 1
-        props = __get_memberdef_props(v)
-
-      else:  # Load object
-        pass
-
-  elif v.type == "string":
-    name = v.val
+  # address: { street, city, state }
   else:
-    raise KeyError("invalid-key")
+    # TODO: Add default
 
-  mdef = MemberDef(
-      name,
-      mtype,
-      name if base_path == '' else '.'.join([base_path, name]),
-      optional=optional,
-      null=null
-  )
-  return mdef
+    o.schema = compile(tree, o.path, defs)
+    return o
 
+def get_array_memberdef(name, tree, path, defs=None):
+  """
+  When o.type is an array!
+  """
 
-def __get_memberdef_props(o):
-  pass
+  o = get_object(name, 'array', path)
 
+  array_len = len(tree.val)
+  # tags: []
+  if array_len == 0:
+    o.schema = []
+    return o
 
-def __is_memberdef(o):
-  if o.type == "string":
-    return is_datatype(o.type)
+  if array_len == 1:
+    first = tree.val[0]
 
-  if o.type == "object":
-    return (
-        len(o.val) > 0 and
-        is_datatype(o.val[0].val) and
-        o.val[0].key is None
-    )
+    if first.type == 'string':
+      if first.val == 'object':
+        return {}
+      elif first.type == 'array':
+        return 'any'
+      elif is_datatype(first.val):
+        return first.val
+      else:
+        raise errors.INVALID_DATATYPE
+        # return [get_object_memberdef(o.name, first.val, path, defs)]
+    elif first.type == 'object':
+      print(">>>", o.name)
+      return get_object_memberdef(o.name, first, '' , defs)
 
-  return False
+  else:
+    raise "multiple-schema"
 
+def parse_memberdef(o, tree, datatype):
+  # Scalar datatypes such as string, number etc...
+  # key: { string, ... }
+  typedef = registry.get_typedef(datatype)
+  if typedef is None:
+    raise errors.INVALID_DATATYPE
 
-def __is_object_schema(o):
-  if (o.type == "object"):
-    return len(o.val) == 0 or is_datatype(o.val[0]) is False
-  return False
+  memberdef = registry.get_typedef("object").parse(tree, typedef.definition)
+  o.update(**memberdef)
+  return o
 
+def parse_arraydef(name, tree, path, defs=None):
+  """
+  Parses the tree def that looks like array!
+  {[], ...},
+  {[ string ], ...},
+  {[ {a, b, c} ], ...}
+  {[ [ { string } ] ], ...}
 
-def __get_value(v, base_path):
-  pass
+  Receives the objects in the following format!
+  { type:object, val:[{ type:array, val:...}]}
+  """
 
+  o = get_object(name, 'array', path)
 
-# def __get
+  if len(tree.val) == 0:
+    o.schema = []
+    o.type = "array"
+    return o
+
+  # {[string], ...} {[{a, b, c}], ....}
+  elif tree.val[0].type == 'array':
+    o.schema = get_array_memberdef('', tree.val[0], path + '[', defs)
+    o.type = "array"
+
+    return o
+
+  elif tree.val[0].type == 'object':
+    o.schema = get_object_memberdef('', tree.val[0], path + '[', defs)
+
+    o.schema.type = 'array'
+    return o
+
+    # [ {} ]
+    # if first
+
+  # if schema is None:
+  #   if (tree.val) > 0:
+  #     raise exc
+  #   if tree.val[0].type == 'array':
+  #     val = tree.val[0].val
+
+  #   else:
+  #     # TODO: Check this!
+  #     assert False, "invalid-block"
+
+  # if schema is not None:
+
+  #   return o
+
+def parse_objectdef(o, tree, defs=None):
+  schema = None
+  # key: {'object', schema:{}, ...}
+  if tree.type == 'object': # TODO: Fix this <- Find type key
+    schema = find_key('schema', tree, None)
+
+  # key: {{}, ...}
+  if schema is None:
+    if isinstance(tree.val[0], dict):
+      schema = tree.val[0]
+    else:
+      # TODO: Check this!
+      assert False, "invalid-block"
+
+  o.schema = compile(schema, o.path)
+  return o
