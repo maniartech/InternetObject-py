@@ -37,6 +37,9 @@ class AST:
       if self.token is None:
         continue
 
+      if self.token.type == 'comment':
+        continue
+
       self.process()
 
     self.finalize()
@@ -45,7 +48,7 @@ class AST:
       self.tree['header'] = self.tree['data']
       self.tree['data'] = None
 
-    helpers.pretty_print(self.tree)
+    # helpers.pretty_print(self.tree)
 
   @property
   def header(self):

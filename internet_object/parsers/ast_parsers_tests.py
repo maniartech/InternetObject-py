@@ -1,5 +1,6 @@
 import unittest
 from .ast_parsers import AST
+from internet_object.utils import helpers
 
 
 class ASTTest(unittest.TestCase):
@@ -22,6 +23,7 @@ class ASTTest(unittest.TestCase):
 
     ast = AST(t1, False)
     ast.parse()
+    helpers.pretty_print(ast)
 
 
 if __name__ == '__main__':
