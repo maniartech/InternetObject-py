@@ -28,5 +28,9 @@ def print_ast_stack(stack):
     print(item)
 
 
-def pretty_print(value):
-  print(json.dumps(value, cls=ObjectEncoder, indent=2))
+def pretty_print(*values):
+
+  print(*[
+    json.dumps(value, cls=ObjectEncoder, indent=2)
+    for value in values
+  ])
