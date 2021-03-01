@@ -38,12 +38,17 @@ class SchemaCompilerTest(unittest.TestCase):
     """
 
     t4 = r"""
-    a:{[]}
+    tags:[{[{string, maxLen: 10}], maxLen:3}]
     """
+
+    t5 = r"""
+    name*: {string}, address:{{x:{a: {j, k, l}, b, c}, y, z}}, tags:{a:{b: {c: d:{string}}}}
+    """
+
     #  c:{[{[{{a, b, c}, default={}},], maxLen:10}]}}
     # lexer = Lexer(t2)
     # lexer.read_all()
-    ast = AST(t3, True)
+    ast = AST(t4, True)
     ast.parse()
     # helpers.pretty_print(ast.tree)
     schema = compile(ast.header)

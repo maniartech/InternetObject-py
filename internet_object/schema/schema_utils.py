@@ -94,4 +94,8 @@ def find_key(key, tree, default=None):
   return default
 
 def join_path(path, name):
-  return name if len(path) == 0 else '%s.%s' % (path, name)
+  if len(path) == 0: return name
+
+  if path[-1] == '[':
+    return path
+  return '%s.%s' % (path, name)

@@ -68,7 +68,7 @@ def compile(tree, path='', defs=None):
 
   return schema
 
-def get_memberdef(name, type_, path, defs=None):
+def get_memberdef(name, type_, path):
   memberdef = get_object(name, type_, path)
 
   if type_ == 'object':
@@ -120,6 +120,7 @@ def get_array_memberdef(name, tree, path, defs=None):
   """
 
   o = get_object(name, 'array', path)
+  o.type = "array"
 
   array_len = len(tree.val)
   # tags: []
@@ -130,19 +131,35 @@ def get_array_memberdef(name, tree, path, defs=None):
   if array_len == 1:
     first = tree.val[0]
 
+    schema = []
+
     if first.type == 'string':
+      # [object]
       if first.val == 'object':
-        return {}
+        schema.append({})
+
+      # [array]
       elif first.type == 'array':
-        return 'any'
+        schema.append('any')
+
+      # [string] or [number]
       elif is_datatype(first.val):
-        return first.val
+        schema.append(first.val)
       else:
+        # [non-datatype-val]
+        # TODO: Improve this!
         raise errors.INVALID_DATATYPE
-        # return [get_object_memberdef(o.name, first.val, path, defs)]
+
+      o.schema = schema
+      return o
+
     elif first.type == 'object':
-      print(">>>", o.name)
-      return get_object_memberdef(o.name, first, '' , defs)
+      o.schema = get_object_memberdef(o.name, first,  path + '[' , defs)
+      return o
+
+    elif first.type == 'array':
+      o.schema = get_array_memberdef(o.name, first, path + '[', defs)
+      return o
 
   else:
     raise "multiple-schema"
@@ -179,13 +196,13 @@ def parse_arraydef(name, tree, path, defs=None):
 
   # {[string], ...} {[{a, b, c}], ....}
   elif tree.val[0].type == 'array':
-    o.schema = get_array_memberdef('', tree.val[0], path + '[', defs)
+    o.schema = get_array_memberdef(path, tree.val[0], path + '[', defs)
     o.type = "array"
 
     return o
 
   elif tree.val[0].type == 'object':
-    o.schema = get_object_memberdef('', tree.val[0], path + '[', defs)
+    o.schema = get_object_memberdef(path, tree.val[0], path + '[', defs)
 
     o.schema.type = 'array'
     return o
