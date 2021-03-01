@@ -1,5 +1,5 @@
 import unittest
-from lexers import Lexer
+from internet_object.parsers.lexers import Lexer
 
 
 class LexerTest(unittest.TestCase):
@@ -15,8 +15,10 @@ class LexerTest(unittest.TestCase):
     ~ "test  " 'wow'
     """
 
-    t2 = "testing"
-    lexer = Lexer(t1)
+    t2 = r"""
+    "Hello\"World", wopw
+    """
+    lexer = Lexer(t2)
     lexer.read_all()
     lexer.print_tokens()
     self.assertTrue(True)

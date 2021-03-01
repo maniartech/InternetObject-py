@@ -28,4 +28,6 @@ class TypeRegistry(Singleton):
     return self.__registry.get(typename, None)
 
 
-type_registry = TypeRegistry()
+
+registry = TypeRegistry()
+schema_registry = TypeRegistry()

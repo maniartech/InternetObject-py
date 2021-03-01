@@ -1,11 +1,9 @@
-from internet_object.typedefs import TypeDef
+from internet_object.typedefs import TypeDef, registry
 from internet_object.core import undefined
-import re
+
 
 from utils import is_scalar, is_datatype
 from core import parse, InternetObject, errors
-from .type_registries import type_registry as registry
-
 
 class ObjectDef(TypeDef):
 
