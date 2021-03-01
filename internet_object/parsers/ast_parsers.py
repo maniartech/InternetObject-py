@@ -1,4 +1,4 @@
-from utils import helpers
+from internet_object.utils import helpers
 
 from .tokens import Token
 from .lexers import Lexer
