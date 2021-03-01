@@ -3,6 +3,17 @@ import re
 from .regexes import *
 from .tokens import Token
 
+escapables = ['"', 'b', 'f', 'r', 'n', 't']
+
+escape_map = {
+  '"': '"',
+  'b': '\b',
+  'f': '\f',
+  'r': '\r',
+  'n': '\n',
+  't': '\t',
+}
+
 
 class Lexer():
   """
@@ -17,6 +28,7 @@ class Lexer():
     self._row = 0
     self._tokens = []
     self._len = len(text)
+    self.val = None
     self.advance()
 
   @property
@@ -47,6 +59,8 @@ class Lexer():
     if self._done is True:
       return
 
+    self.val = None
+
     ch = self._ch
     ch_code = self._ch_code
 
@@ -68,7 +82,8 @@ class Lexer():
 
     # Scan regular string
     elif ch == '"':
-      token = self.scan("string", self.string_scanner, confined=True)
+      self.val = ""
+      token = self.scan("string", self.regular_string_scanner, confined=True)
       self.advance()
 
     # Scan raw string
@@ -143,8 +158,12 @@ class Lexer():
       if scanner(start, self._index) is False:
         break
 
-    token = self._text[start:self._index +
+    if self.val is None:
+      token = self._text[start:self._index +
                        (1 if confined or self._done else 0)].strip()
+    else:
+      token = self.val.strip()
+
     return None if skip else (Token(token, token_type,
                                     start, start + len(token)-1, self._row, self._col))
 
@@ -161,11 +180,26 @@ class Lexer():
     except IndexError:
       return False
 
-  def string_scanner(self, start, end):
-    if self._ch != '"':
+  def regular_string_scanner(self, start, end):
+
+    # Handle escapes
+    if self._ch == "\\":
+      try:
+        next = self._text[self._index+1]
+        # check if
+        if next in escapables:
+          self.val += escape_map[next]
+          self.advance()
+      except (IndexError):
+        return True
+
+    elif self._ch != '"':
+
+      # Last char reached without closing the regular string!
       if self._index == self._len - 1:
         raise SyntaxError("incomplete-string (%s, %s)" %
                           (self._row, self._col,))
+      self.val += self._ch
       return True
 
     token = self._text[start:self._index+1]
