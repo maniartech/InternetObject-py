@@ -14,3 +14,9 @@ re_regular_string = re.compile(r"^\"(?:[^\"\\]|\\.)*\"$")
 re_raw_string = re.compile(r"^'((?:''|[^'])*)'$")
 
 re_number = re.compile(r"^([-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)$")
+
+re_binary = re.compile(r"^[-+]?0[Bb]([10]+)$")
+
+re_octal = re.compile(r"^[-+]?0[Cc]([0-7]+)$")
+
+re_hexa = re.compile(r"^[-+]?0[Xx]([0-9a-fA-F]+)$")

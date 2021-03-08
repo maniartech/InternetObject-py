@@ -16,7 +16,7 @@ class LexerTest(unittest.TestCase):
     """
 
     t2 = r"""
-    "Hello\"World", wopw
+    "Hello\"World", wopw, 'Peter D''silva', 0b100, 0xFF, 0c10
     """
     lexer = Lexer(t2)
     lexer.read_all()

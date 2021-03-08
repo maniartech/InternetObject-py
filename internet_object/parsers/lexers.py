@@ -88,6 +88,7 @@ class Lexer():
 
     # Scan raw string
     elif ch == "'":
+      self.val = ""
       token = self.scan("string", self.raw_string_scanner, confined=True)
       self.advance()
 
@@ -181,26 +182,39 @@ class Lexer():
       return False
 
   def regular_string_scanner(self, start, end):
+    ch = self._ch
 
     # Handle escapes
-    if self._ch == "\\":
+    if ch == "\\":
       try:
         next = self._text[self._index+1]
         # check if
         if next in escapables:
           self.val += escape_map[next]
-          self.advance()
+          self.advance(1)
+
+        elif next in ('x', 'X'):
+          pass
+
+        elif next in ('U', 'u'):
+          pass
+
       except (IndexError):
         return True
 
-    elif self._ch != '"':
+    elif ch != '"':
 
       # Last char reached without closing the regular string!
       if self._index == self._len - 1:
         raise SyntaxError("incomplete-string (%s, %s)" %
                           (self._row, self._col,))
-      self.val += self._ch
+      self.val += ch
       return True
+
+    if ch == '"':
+      return False
+
+    return True
 
     token = self._text[start:self._index+1]
     return re_regular_string.match(token) is None
@@ -210,15 +224,24 @@ class Lexer():
       if self._index == self._len - 1:
         raise SyntaxError("incomplete-string (%s, %s)" %
                           (self._row, self._col,))
+      self.val += self._ch
       return True
 
     # If next ch is ' too, ignore it
     try:
       next_ch = self._text[self._index+1]
       if next_ch == "'":
+        self.val += "'"
+        self.advance()
         return True
+      return False
     except IndexError:
       return False
+
+    if self._ch == '"':
+      return False
+
+    return True
 
     token = self._text[start:self._index+1]
     return re_raw_string.match(token) is None
@@ -256,5 +279,17 @@ class Lexer():
         ), 'number'
       except ValueError:
         pass
+
+    # Binary number
+    elif re_binary.match(token) is not None:
+      return int(re_binary.findall(token)[0], 2), 'number'
+
+    # Octal number
+    elif re_octal.match(token) is not None:
+      return int(re_octal.findall(token)[0], 8), 'number'
+
+    # Hex number
+    elif re_hexa.match(token) is not None:
+      return int(re_hexa.findall(token)[0], 16), 'number'
 
     return token, "string"
