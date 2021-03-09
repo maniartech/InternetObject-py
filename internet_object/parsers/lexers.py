@@ -96,14 +96,14 @@ class Lexer():
       token = self.scan('comment', self.comment_scanner)
 
     elif is_datasep:
-      token = Token("---", "datasep", self._index,
+      token = Token("---", "datasep", "---", self._index,
                     self._index + 3, self._row, self._col)
       self.advance(3)
 
     # Process separator
     elif re_separator.match(ch):
       # self._index += 1
-      token = Token(ch, 'sep', self._index,
+      token = Token(ch, 'sep', ch, self._index,
                     self._index, self._row, self._col)
       self.advance()
 
@@ -159,13 +159,13 @@ class Lexer():
       if scanner(start, self._index) is False:
         break
 
-    if self.val is None:
-      token = self._text[start:self._index +
+    token = self._text[start:self._index +
                        (1 if confined or self._done else 0)].strip()
-    else:
-      token = self.val.strip()
+    val = token
+    if self.val is not None:
+      val = self.val
 
-    return None if skip else (Token(token, token_type,
+    return None if skip else (Token(token, token_type, val,
                                     start, start + len(token)-1, self._row, self._col))
 
   # Validators, Scanners and Processors
