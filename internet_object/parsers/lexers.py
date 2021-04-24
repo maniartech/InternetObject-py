@@ -1,7 +1,7 @@
 import re
 
-from .regexes import *
-from .tokens import Token
+from internet_object.parsers.regexes import *
+from internet_object.parsers.tokens import Token
 
 escapables = ['"', 'b', 'f', 'r', 'n', 't']
 

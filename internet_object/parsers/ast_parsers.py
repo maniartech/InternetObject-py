@@ -1,8 +1,7 @@
 from internet_object.utils import helpers
 
-from .tokens import Token
-from .lexers import Lexer
-from .nodes import Node
+from internet_object.parsers.lexers import Lexer
+from internet_object.parsers.nodes import Node
 
 
 class AST:

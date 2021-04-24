@@ -1,9 +1,9 @@
 # from objects import InternetObject
 from collections.abc import MutableMapping
 
-from parsers import AST
-from utils import is_datatype, is_scalar, is_container
-import core
+from internet_object.parsers import AST
+from internet_object.utils import is_datatype, is_scalar, is_container
+from internet_object import core
 
 
 # Return the python dictionary
