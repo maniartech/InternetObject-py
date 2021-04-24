@@ -1,4 +1,4 @@
-from utils.singletons import Singleton
+from internet_object.utils.singletons import Singleton
 
 
 class TypeRegistry(Singleton):

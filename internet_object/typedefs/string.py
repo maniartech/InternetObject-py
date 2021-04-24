@@ -1,7 +1,7 @@
 import re
 
 from internet_object.utils import helpers
-from core import parse, InternetObject, errors
+from internet_object.core import parse, InternetObject, errors
 from .typedef import TypeDef
 
 class StringDef (TypeDef):

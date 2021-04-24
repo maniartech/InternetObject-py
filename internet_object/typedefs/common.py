@@ -1,4 +1,4 @@
-from core import errors, undefined
+from internet_object.core import errors, undefined
 
 def clean(value, node, memberDef):
 
