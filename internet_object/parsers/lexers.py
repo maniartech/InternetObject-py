@@ -203,7 +203,6 @@ class Lexer():
         return True
 
     elif ch != '"':
-
       # Last char reached without closing the regular string!
       if self._index == self._len - 1:
         raise SyntaxError("incomplete-string (%s, %s)" %
@@ -216,9 +215,6 @@ class Lexer():
 
     return True
 
-    token = self._text[start:self._index+1]
-    return re_regular_string.match(token) is None
-
   def raw_string_scanner(self, start, end):
     if self._ch != "'":
       if self._index == self._len - 1:
@@ -226,6 +222,7 @@ class Lexer():
                           (self._row, self._col,))
       self.val += self._ch
       return True
+
 
     # If next ch is ' too, ignore it
     try:
