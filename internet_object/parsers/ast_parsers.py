@@ -143,7 +143,7 @@ class AST:
           pipe[-1] == ":" or
               # When last value in the pipe is not a string
               pipe[-1].type != "string"):
-        print(pipe)
+        # print(pipe)
         raise SyntaxError("unexpected-colon")
 
       else:
