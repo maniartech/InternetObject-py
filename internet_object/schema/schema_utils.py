@@ -6,6 +6,7 @@ from internet_object.utils import is_datatype
 
 def get_object(name, type, path, **kwargs):
   regex = r'[\*\?]{1,2}$'
+
   matches = list(re.finditer(regex, name, re.MULTILINE))
 
   if len(matches) == 0:

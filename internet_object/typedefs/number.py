@@ -1,7 +1,7 @@
 import re
 
-from utils import is_scalar
-from core import parse, InternetObject, errors
+from internet_object.utils import is_scalar
+from internet_object.core import parse, InternetObject, errors
 from .common import clean
 from .typedef import TypeDef
 

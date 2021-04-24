@@ -6,8 +6,23 @@ from internet_object.utils        import helpers, is_datatype
 from internet_object.typedefs     import registry
 from internet_object.core.private import errors
 
+def compile(tree, defs=None):
+  if tree.type == 'object':
+    # Sometime users wraps the root object in curly braces
+    # such as >> {a, b, c}
+    # instead of >> a, b, c
+    # In such case remove the wrapped object and pass the value to compile object!
+    if (len(tree.val) == 1 and
+        tree.val[0].type == 'object' and
+        tree.val[0].key is None):
+      return compile_object(tree.val[0], defs=defs)
+    return compile_object(tree)
 
-def compile(tree, path='', defs=None):
+
+  raise TypeError('invalid-object')
+
+
+def compile_object(tree, path='', defs=None):
 
   if tree is None:
     return None
@@ -23,42 +38,53 @@ def compile(tree, path='', defs=None):
   for item in tree.val:
     if item is None:
       assert('Check out why item is None')
-      # raise ValueError(errors.VALUE_REQUIRED)
 
     # Find key, val
     name, val = find_name_val(item)
-
-    if isinstance(name, str) is False:
-      raise errors.INVALID_KEY # Key must be string!
 
     # TODO: Parse defs here!
 
     memberdef = None
 
     # Process string keys
+    # name:string, age:number etc...
     if is_datatype(val):
+      # import pdb; pdb.set_trace()
       # name
       # key: string
       # key: any
-      memberdef = get_memberdef(name, val, path)
+      # item = get_memberdef(name, val, path)
+      item.type = 'object'
+      item.val = [InternetObject({
+        'pos': 0,
+        'col': item.col,
+        'end': item.end,
+        'key': None,
+        'row': item.row,
+        'start': item.start,
+        'type': 'string',
+        'val': val
+      })]
 
-    elif item.type == 'object':
+    if item.type == 'object':
       # When item type is an object, it could be a schema
       # or a memberdef.
       # key: {string, default=test}
       # address: {city, state, zip}
       # color: {{r, g, b}, default={0, 0, 0}, null=True}
       # test: {}
+      # arr:{[], min:1}
       memberdef = get_object_memberdef(name, item, path, defs)
 
     elif item.type == 'array':
       # tags: []
-      # tags: {[], min=1}
       # tags: [string]
       memberdef = get_array_memberdef(name, item, path, defs)
 
     else:
-      raise errors.INVALID_DATATYPE
+      print("Must not reach here...")
+      helpers.pretty_print(item)
+      raise TypeError(errors.INVALID_DATATYPE)
 
     if memberdef is not None:
       schema.append(memberdef, memberdef.name)
@@ -80,6 +106,9 @@ def get_memberdef(name, type_, path):
   return memberdef
 
 def get_object_memberdef(name, tree, path, defs=None):
+
+  # import pdb; pdb.set_trace()
+
   # typename = None
   o = get_object(name, 'object', path)
 
@@ -111,7 +140,7 @@ def get_object_memberdef(name, tree, path, defs=None):
   else:
     # TODO: Add default
 
-    o.schema = compile(tree, o.path, defs)
+    o.schema = compile_object(tree, o.path, defs)
     return o
 
 def get_array_memberdef(name, tree, path, defs=None):
@@ -154,11 +183,11 @@ def get_array_memberdef(name, tree, path, defs=None):
       return o
 
     elif first.type == 'object':
-      o.schema = get_object_memberdef(o.name, first,  path + '[' , defs)
+      o.schema = get_object_memberdef(o.name, first,  join_path(path,'%s[' % name) , defs)
       return o
 
     elif first.type == 'array':
-      o.schema = get_array_memberdef(o.name, first, path + '[', defs)
+      o.schema = get_array_memberdef(o.name, first, join_path(path,'%s[' % name), defs)
       return o
 
   else:
@@ -196,13 +225,13 @@ def parse_arraydef(name, tree, path, defs=None):
 
   # {[string], ...} {[{a, b, c}], ....}
   elif tree.val[0].type == 'array':
-    o.schema = get_array_memberdef(path, tree.val[0], path + '[', defs)
+    o.schema = get_array_memberdef(name, tree.val[0], path + '[', defs)
     o.type = "array"
 
     return o
 
   elif tree.val[0].type == 'object':
-    o.schema = get_object_memberdef(path, tree.val[0], path + '[', defs)
+    o.schema = get_object_memberdef(name, tree.val[0], path + '[', defs)
 
     o.schema.type = 'array'
     return o
@@ -238,5 +267,5 @@ def parse_objectdef(o, tree, defs=None):
       # TODO: Check this!
       assert False, "invalid-block"
 
-  o.schema = compile(schema, o.path)
+  o.schema = compile_object(schema, o.path)
   return o

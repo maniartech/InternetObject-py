@@ -2,8 +2,8 @@ from internet_object.typedefs import TypeDef, registry
 from internet_object.core import undefined
 
 
-from utils import is_scalar, is_datatype
-from core import parse, InternetObject, errors
+from internet_object.utils import helpers, is_scalar, is_datatype
+from internet_object.core import parse, InternetObject, errors
 
 class ObjectDef(TypeDef):
 
@@ -41,9 +41,17 @@ class ObjectDef(TypeDef):
         keyedMembers = True
         schema = memberDef.get(item.key)
 
+         # When memberdef is not available
+        if schema is None:
+          # TODO: Validate dynamic members
+          # Also try to get path from memberdef!
+          if node.key:
+            raise KeyError("%s.%s" % (node.key, item.key))
+          else:
+            raise KeyError("%s" % item.key)
+
       typedef = registry.get_typedef(schema.type)
-      val = typedef.parse(item, schema)
-      o[schema.name] = val
+      o[schema.name] = typedef.parse(item, schema)
 
     # keyedMembers = False
     for index, key in enumerate(memberDef.keys()):

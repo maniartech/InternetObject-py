@@ -1,23 +1,22 @@
-from utils import is_scalar
-from core import parse, InternetObject
+from internet_object.typedefs.typedef import TypeDef
+from internet_object.utils import is_scalar
+from internet_object.core import parse, InternetObject
 from .common import clean
 
-class AnyDef:
+class AnyDef(TypeDef):
 
   definition = InternetObject.parse(
                   r"""
-                  type?: {string, default:string, choices:[string]},
-                  default: string,
-                  minLen: {int, min:0},
-                  maxLen: {int, min:0},
-                  len: {int, min:0},
-                  "null": bool,
-                  optional: bool
+                  type        : { name:type, type:string, default:"any", choices:["any"] },
+                  default     : { name:default, type:any, optional:T },
+                  choices     : { name:choices, type:array, of:any, optional:T },
+                  optional    : { name:optional, type:bool, default:F },
+                  "null"      : { name:"null", type:bool, default:F }
                   """
                 )
 
-  def parse(self, node, memberDef):
-    val, is_final = clean(node, memberDef)
+  def __init__(self):
+    self.typename = 'any'
 
-    if is_final:
-      return val
+  def validate(self, val, memberDef):
+    return True, None
