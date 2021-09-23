@@ -30,5 +30,14 @@ class LexerTest(unittest.TestCase):
             self.assertTrue(
                 tokenVal == tests[i], f"Expected : {tests[i]}, Got : {tokenVal}")
 
+    def test_boolean(self):
+        tests = {"T": True, "F": False, "false": False, "true": True}
+        for i in tests:
+            lex = Lexer(i+" ")
+            lex.read_all()
+            token = lex.return_tokens()
+            tokenVal = token.__dict__["val"]
+            self.assertTrue(
+                tokenVal == tests[i], f"Expected : {tests[i]}, Got : {tokenVal}")
 if __name__ == '__main__':
     unittest.main()
